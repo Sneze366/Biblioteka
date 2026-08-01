@@ -146,7 +146,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Main Navigation Tabs */}
+            {/* Main Navigation Tabs */}
       <div className="bg-[#3A4B3D] border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-1 sm:space-x-4 overflow-x-auto py-2 scrollbar-none">
@@ -161,16 +161,18 @@ export const Header: React.FC<HeaderProps> = ({
               <span>📊 Контролна табла</span>
             </button>
 
-            <button
-              onClick={() => setActiveTab('loans')}
-              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium transition flex items-center gap-2 whitespace-nowrap ${
-                activeTab === 'loans'
-                  ? 'bg-[#F8F9F4] text-[#4A5D4E] font-bold shadow-sm'
-                  : 'text-[#D9E4DD] hover:bg-white/10 hover:text-white'
-              }`}
-            >
-              <span>📋 Евиденција</span>
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => setActiveTab('loans')}
+                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium transition flex items-center gap-2 whitespace-nowrap ${
+                  activeTab === 'loans'
+                    ? 'bg-[#F8F9F4] text-[#4A5D4E] font-bold shadow-sm'
+                    : 'text-[#D9E4DD] hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>📋 Евиденција</span>
+              </button>
+            )}
 
             <button
               onClick={() => setActiveTab('books')}

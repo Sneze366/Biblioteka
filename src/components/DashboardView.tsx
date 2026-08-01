@@ -303,12 +303,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={() => onNavigateTab('loans')}
-                className="bg-[#A8763E] hover:bg-[#966835] text-white font-bold text-xs px-3.5 py-2 rounded-xl transition shadow-sm"
-              >
-                Отвори евиденција
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => onNavigateTab('loans')}
+                  className="bg-[#A8763E] hover:bg-[#966835] text-white font-bold text-xs px-3.5 py-2 rounded-xl transition shadow-sm"
+                >
+                  Отвори евиденција
+                </button>
+              )}
               <button
                 onClick={() => onNavigateTab('members')}
                 className="bg-white/10 hover:bg-white/20 text-white font-medium text-xs px-3.5 py-2 rounded-xl transition border border-white/10"
@@ -320,42 +322,44 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         </div>
 
-        {/* Right 1 Column: Overdue Warnings & Live Activity Feed */}
+        {/* Right 1 Column: Overdue Warnings (Admin) & Live Activity Feed */}
         <div className="space-y-6">
           
-          {/* Overdue Warnings Widget */}
-          <div className="bg-white rounded-[32px] p-5 border border-[#E6E8E0] shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-sm flex items-center gap-2 text-rose-700">
-                <ShieldAlert className="w-4 h-4 text-rose-600" />
-                Задоцнети позајмувања ({overduePreview.length})
-              </h3>
-              <button
-                onClick={() => onNavigateTab('loans')}
-                className="text-xs text-rose-600 hover:underline font-semibold"
-              >
-                Види сите
-              </button>
-            </div>
-
-            {overduePreview.length === 0 ? (
-              <p className="text-xs text-[#8B9285] py-3 text-center">Нема задоцнети рокови во моментов. Сите се уредни!</p>
-            ) : (
-              <div className="space-y-2.5">
-                {overduePreview.map(l => (
-                  <div key={l.id} className="p-2.5 rounded-2xl bg-rose-50/70 border border-rose-200 text-xs space-y-1">
-                    <div className="flex justify-between font-bold text-[#2C332D]">
-                      <span className="truncate max-w-[180px]">{l.bookTitle}</span>
-                      <span className="text-rose-700">{l.dueDate}</span>
-                    </div>
-                    <div className="text-[#8B9285] flex justify-between">
-                      <span>Член: <strong className="text-[#2C332D]">{l.memberName}</strong> ({l.memberGrade})</span>
-                    </div>
-                  </div>
-                ))}
+          {/* Overdue Warnings Widget (Admin Only) */}
+          {isAdmin && (
+            <div className="bg-white rounded-[32px] p-5 border border-[#E6E8E0] shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-sm flex items-center gap-2 text-rose-700">
+                  <ShieldAlert className="w-4 h-4 text-rose-600" />
+                  Задоцнети позајмувања ({overduePreview.length})
+                </h3>
+                <button
+                  onClick={() => onNavigateTab('loans')}
+                  className="text-xs text-rose-600 hover:underline font-semibold"
+                >
+                  Види сите
+                </button>
               </div>
-            )}
-          </div>
+
+              {overduePreview.length === 0 ? (
+                <p className="text-xs text-[#8B9285] py-3 text-center">Нема задоцнети рокови во моментов. Сите се уредни!</p>
+              ) : (
+                <div className="space-y-2.5">
+                  {overduePreview.map(l => (
+                    <div key={l.id} className="p-2.5 rounded-2xl bg-rose-50/70 border border-rose-200 text-xs space-y-1">
+                      <div className="flex justify-between font-bold text-[#2C332D]">
+                        <span className="truncate max-w-[180px]">{l.bookTitle}</span>
+                        <span className="text-rose-700">{l.dueDate}</span>
+                      </div>
+                      <div className="text-[#8B9285] flex justify-between">
+                        <span>Член: <strong className="text-[#2C332D]">{l.memberName}</strong> ({l.memberGrade})</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Real-time Activity Ticker */}
           <div className="bg-white rounded-[32px] p-5 border border-[#E6E8E0] shadow-sm">
@@ -371,26 +375,36 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
 
             <div className="space-y-3">
-              {logs.slice(0, 6).map(log => (
-                <div key={log.id} className="flex items-start gap-2.5 text-xs border-b border-[#F1F3ED] pb-2.5 last:border-0 last:pb-0">
-                  <div className={`p-1.5 rounded-xl text-white flex-shrink-0 mt-0.5 ${
-                    log.type === 'issue' ? 'bg-[#A8763E]' :
-                    log.type === 'return' ? 'bg-[#5D8A66]' :
-                    log.type === 'add_member' ? 'bg-[#4A5D4E]' : 'bg-[#8B9285]'
-                  }`}>
-                    {log.type === 'issue' ? <ArrowUpRight className="w-3 h-3" /> :
-                     log.type === 'return' ? <CheckCircle2 className="w-3 h-3" /> :
-                     <Clock className="w-3 h-3" />}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-[#2C332D] flex items-center justify-between gap-2">
-                      <span>{log.title}</span>
-                      <span className="text-[10px] font-normal text-[#8B9285]">{log.timestamp.split(' ')[1]}</span>
+              {logs.slice(0, 6).map(log => {
+                const detailsText = isAdmin
+                  ? log.details
+                  : log.details
+                      .replace(/му е издадена на [^(]+\([^)]+\)/gi, 'е успешно позајмена')
+                      .replace(/му е издадена на [^.]+/gi, 'е успешно позајмена')
+                      .replace(/од член [^(]+\([^)]+\)/gi, '')
+                      .replace(/член: [^(]+\([^)]+\)/gi, 'член');
+
+                return (
+                  <div key={log.id} className="flex items-start gap-2.5 text-xs border-b border-[#F1F3ED] pb-2.5 last:border-0 last:pb-0">
+                    <div className={`p-1.5 rounded-xl text-white flex-shrink-0 mt-0.5 ${
+                      log.type === 'issue' ? 'bg-[#A8763E]' :
+                      log.type === 'return' ? 'bg-[#5D8A66]' :
+                      log.type === 'add_member' ? 'bg-[#4A5D4E]' : 'bg-[#8B9285]'
+                    }`}>
+                      {log.type === 'issue' ? <ArrowUpRight className="w-3 h-3" /> :
+                       log.type === 'return' ? <CheckCircle2 className="w-3 h-3" /> :
+                       <Clock className="w-3 h-3" />}
                     </div>
-                    <p className="text-[#8B9285] text-[11px] leading-snug mt-0.5">{log.details}</p>
+                    <div>
+                      <div className="font-semibold text-[#2C332D] flex items-center justify-between gap-2">
+                        <span>{log.title}</span>
+                        <span className="text-[10px] font-normal text-[#8B9285]">{log.timestamp.split(' ')[1]}</span>
+                      </div>
+                      <p className="text-[#8B9285] text-[11px] leading-snug mt-0.5">{detailsText}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

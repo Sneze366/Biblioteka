@@ -439,23 +439,53 @@ export const BooksView: React.FC<BooksViewProps> = ({
               </p>
             </div>
 
-            {/* Current Borrowers List */}
+            {/* Current Borrowers List (Admin) or Privacy Status (Visitor) */}
             <div className="space-y-2">
               <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                Моментално е кај учениците/членовите ({currentBorrowers.length}):
+                {isAdmin ? `Моментално е кај учениците/членовите (${currentBorrowers.length}):` : 'Статус на задоцнетост / рафт:'}
               </h4>
-              {currentBorrowers.length === 0 ? (
-                <p className="text-xs text-slate-400 italic">Сите примероци се моментално во библиотеката.</p>
-              ) : (
-                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                  {currentBorrowers.map(l => (
-                    <div key={l.id} className="p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs flex justify-between items-center">
-                      <div>
-                        <strong className="text-slate-900">{l.memberName}</strong> ({l.memberGrade})
+              {isAdmin ? (
+                currentBorrowers.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic">Сите примероци се моментално во библиотеката.</p>
+                ) : (
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                    {currentBorrowers.map(l => (
+                      <div key={l.id} className="p-2 bg-amber-50 border border-amber-200 rounded-lg text-xs flex justify-between items-center">
+                        <div>
+                          <strong className="text-slate-900">{l.memberName}</strong> ({l.memberGrade})
+                        </div>
+                        <span className="text-slate-500 text-[11px]">Рок: {l.dueDate}</span>
                       </div>
-                      <span className="text-slate-500 text-[11px]">Рок: {l.dueDate}</span>
+                    ))}
+                  </div>
+                )
+              ) : (
+                <div className="p-3 rounded-2xl border text-xs">
+                  {selectedBook.availableCopies === selectedBook.totalCopies ? (
+                    <div className="flex items-center gap-2.5 bg-emerald-50 text-emerald-800 p-3 rounded-xl border border-emerald-200">
+                      <span className="w-3 h-3 rounded-full bg-emerald-500 shrink-0"></span>
+                      <div>
+                        <strong className="font-bold text-emerald-900">Достапна на рафт</strong>
+                        <p className="text-[11px] text-emerald-700 mt-0.5">Сите {selectedBook.totalCopies} примероци се слободни за читање.</p>
+                      </div>
                     </div>
-                  ))}
+                  ) : selectedBook.availableCopies > 0 ? (
+                    <div className="flex items-center gap-2.5 bg-amber-50 text-amber-900 p-3 rounded-xl border border-amber-200">
+                      <span className="w-3 h-3 rounded-full bg-amber-500 shrink-0"></span>
+                      <div>
+                        <strong className="font-bold text-amber-950">Делумно слободна</strong>
+                        <p className="text-[11px] text-amber-800 mt-0.5">Има {selectedBook.availableCopies} слободни примероци на рафт (од вкупно {selectedBook.totalCopies}).</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2.5 bg-rose-50 text-rose-900 p-3 rounded-xl border border-rose-200">
+                      <span className="w-3 h-3 rounded-full bg-rose-500 shrink-0"></span>
+                      <div>
+                        <strong className="font-bold text-rose-950">Позајмена</strong>
+                        <p className="text-[11px] text-rose-700 mt-0.5">Сите примероци од оваа книга се моментално позајмени.</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

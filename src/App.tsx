@@ -62,6 +62,9 @@ export default function App() {
   const handleAdminLogout = () => {
     setIsAdmin(false);
     sessionStorage.removeItem('ilinden_library_is_admin');
+    if (activeTab === 'loans') {
+      setActiveTab('dashboard');
+    }
   };
 
   // Modal Dialog States
@@ -231,17 +234,35 @@ export default function App() {
         )}
 
         {activeTab === 'loans' && (
-          <CirculationView
-            loans={loans}
-            onIssueNewBook={() => {
-              setInitialBookForIssue(null);
-              setInitialMemberForIssue(null);
-              setIsIssueModalOpen(true);
-            }}
-            onReturnBook={handleReturnBook}
-            onExtendLoan={handleExtendLoan}
-            isAdmin={isAdmin}
-          />
+          isAdmin ? (
+            <CirculationView
+              loans={loans}
+              onIssueNewBook={() => {
+                setInitialBookForIssue(null);
+                setInitialMemberForIssue(null);
+                setIsIssueModalOpen(true);
+              }}
+              onReturnBook={handleReturnBook}
+              onExtendLoan={handleExtendLoan}
+              isAdmin={isAdmin}
+            />
+          ) : (
+            <DashboardView
+              stats={stats}
+              books={books}
+              loans={loans}
+              logs={logs}
+              onNavigateTab={setActiveTab}
+              onOpenIssueModal={() => {
+                setInitialBookForIssue(null);
+                setInitialMemberForIssue(null);
+                setIsIssueModalOpen(true);
+              }}
+              onOpenQuickStock={() => setIsQuickStockOpen(true)}
+              onSelectBookForIssue={handleOpenIssueForBook}
+              isAdmin={isAdmin}
+            />
+          )
         )}
 
         {activeTab === 'books' && (
