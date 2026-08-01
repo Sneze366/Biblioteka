@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, Search, Check, AlertCircle, Calendar, ArrowRightLeft, UserCheck, BookOpen } from 'lucide-react';
+import { X, Search, Check, AlertCircle, Calendar, ArrowRightLeft, UserCheck, BookOpen, Loader2 } from 'lucide-react';
 import { Book, Member } from '../types';
 
 interface IssueBookModalProps {
@@ -7,7 +7,7 @@ interface IssueBookModalProps {
   onClose: () => void;
   books: Book[];
   members: Member[];
-  onConfirmIssue: (bookId: string, memberId: string, dueDays: number, notes?: string) => void;
+  onConfirmIssue: (bookId: string, memberId: string, dueDays: number, notes?: string) => Promise<void> | void;
   initialSelectedBook?: Book | null;
   initialSelectedMember?: Member | null;
 }
@@ -30,6 +30,7 @@ export const IssueBookModal: React.FC<IssueBookModalProps> = ({
   const [dueDays, setDueDays] = useState<number>(14);
   const [notes, setNotes] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reset when modal opens with initial values
   React.useEffect(() => {
@@ -60,8 +61,9 @@ export const IssueBookModal: React.FC<IssueBookModalProps> = ({
       .slice(0, 8);
   }, [members, memberSearch]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!selectedBook) {
       setErrorMsg('Ве молиме изберете книга за позајмување.');
       return;
@@ -71,12 +73,19 @@ export const IssueBookModal: React.FC<IssueBookModalProps> = ({
       return;
     }
 
-    onConfirmIssue(selectedBook.id, selectedMember.id, dueDays, notes);
-    onClose();
-    // Reset
-    setSelectedBook(null);
-    setSelectedMember(null);
-    setErrorMsg('');
+    setIsSubmitting(true);
+    try {
+      await onConfirmIssue(selectedBook.id, selectedMember.id, dueDays, notes);
+      onClose();
+      // Reset
+      setSelectedBook(null);
+      setSelectedMember(null);
+      setErrorMsg('');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -261,9 +270,11 @@ export const IssueBookModal: React.FC<IssueBookModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl hover:bg-amber-400 transition shadow-md"
+              disabled={isSubmitting}
+              className="px-5 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl hover:bg-amber-400 disabled:opacity-50 transition shadow-md flex items-center gap-2"
             >
-              Позајми книга
+              {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>{isSubmitting ? 'Се позајмува во Firestore...' : 'Позајми книга'}</span>
             </button>
           </div>
         </form>

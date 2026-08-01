@@ -1,5 +1,7 @@
-import { Book, Member, Loan, ActivityLog, LibraryStats } from '../types';
+import { Book, Member, Loan, ActivityLog, LibraryStats, LoanStatus } from '../types';
 import { generateInitialBooks, generateInitialMembers, generateInitialLoansAndActivity } from '../data/seedData';
+import { db } from '../firebase';
+import { collection, addDoc, doc, updateDoc, onSnapshot } from 'firebase/firestore';
 
 const BOOKS_KEY = 'ilinden_library_books_v1';
 const MEMBERS_KEY = 'ilinden_library_members_v1';
@@ -12,6 +14,55 @@ export const LIBRARY_STORAGE_EVENT = 'ilinden_library_updated';
 
 function notifyChange() {
   window.dispatchEvent(new Event(LIBRARY_STORAGE_EVENT));
+}
+
+// Real-time Firestore subscription for 'loans' collection
+export function subscribeToLoans(onLoansUpdate: (loans: Loan[]) => void) {
+  try {
+    const loansCollection = collection(db, "loans");
+    const unsubscribe = onSnapshot(loansCollection, (snapshot) => {
+      const firestoreLoans: Loan[] = snapshot.docs.map(docSnap => {
+        const data = docSnap.data();
+        let status = data.status || 'активна';
+        const todayStr = new Date().toISOString().split('T')[0];
+        if (status === 'активна' && data.dueDate && data.dueDate < todayStr) {
+          status = 'задоцнета';
+        }
+        return {
+          id: docSnap.id,
+          loanNumber: data.loanNumber || `ПЗ-2026-${docSnap.id.substring(0, 4)}`,
+          bookId: data.bookId || '',
+          bookTitle: data.bookTitle || '',
+          bookAuthor: data.bookAuthor || '',
+          bookShelf: data.bookShelf || '',
+          memberId: data.memberId || '',
+          memberName: data.memberName || '',
+          memberGrade: data.memberGrade || '',
+          issueDate: data.issueDate || todayStr,
+          dueDate: data.dueDate || todayStr,
+          returnDate: data.returnDate || undefined,
+          status: status as LoanStatus,
+          issuedBy: data.issuedBy || 'Библиотекар Снежана Златковска',
+          notes: data.notes || ''
+        };
+      });
+
+      // Sort newest issue date first
+      firestoreLoans.sort((a, b) => (b.issueDate > a.issueDate ? 1 : -1));
+
+      // Sync local storage cache
+      localStorage.setItem(LOANS_KEY, JSON.stringify(firestoreLoans));
+      notifyChange();
+      onLoansUpdate(firestoreLoans);
+    }, (error) => {
+      console.error("Грешка при преземање на 'loans' во реално време од Firestore:", error);
+    });
+
+    return unsubscribe;
+  } catch (err) {
+    console.error("Грешка при поврзување со Firestore loans:", err);
+    return () => {};
+  }
 }
 
 // Initialize LocalStorage with empty database by default so user can enter real books
@@ -107,8 +158,8 @@ export function logActivity(type: ActivityLog['type'], title: string, details: s
   notifyChange();
 }
 
-// Issue a book to a member
-export function issueBook(bookId: string, memberId: string, dueDays: number = 14, notes?: string): { success: boolean; message: string } {
+// Issue a book to a member (Saves to Firestore 'loans' collection)
+export async function issueBook(bookId: string, memberId: string, dueDays: number = 14, notes?: string): Promise<{ success: boolean; message: string }> {
   const books = getBooks();
   const members = getMembers();
   const loans = getLoans();
@@ -134,10 +185,10 @@ export function issueBook(bookId: string, memberId: string, dueDays: number = 14
   const dueDate = new Date(now);
   dueDate.setDate(dueDate.getDate() + dueDays);
   const dueDateStr = dueDate.toISOString().split('T')[0];
+  const loanNumber = `ПЗ-2026-${Math.floor(1000 + Math.random() * 9000)}`;
 
-  const newLoan: Loan = {
-    id: `pz-${Date.now()}`,
-    loanNumber: `ПЗ-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+  const loanData = {
+    loanNumber,
     bookId: book.id,
     bookTitle: book.title,
     bookAuthor: book.author,
@@ -147,70 +198,106 @@ export function issueBook(bookId: string, memberId: string, dueDays: number = 14
     memberGrade: member.gradeClass,
     issueDate: issueDateStr,
     dueDate: dueDateStr,
-    status: 'активна',
+    status: 'активна' as LoanStatus,
     issuedBy: "Библиотекар Снежана Златковска",
-    notes
+    notes: notes || '',
+    createdAt: new Date().toISOString()
+  };
+
+  let firestoreDocId = `pz-${Date.now()}`;
+  try {
+    const docRef = await addDoc(collection(db, "loans"), loanData);
+    firestoreDocId = docRef.id;
+  } catch (err) {
+    console.error("Грешка при запишување на позајмувањето во Firestore:", err);
+  }
+
+  const newLoan: Loan = {
+    id: firestoreDocId,
+    ...loanData
   };
 
   saveBooks(books);
-  saveLoans([newLoan, ...loans]);
+  saveLoans([newLoan, ...loans.filter(l => l.id !== firestoreDocId)]);
   logActivity('issue', 'Издадена книга', `„${book.title}“ од ${book.author} му е издадена на ${member.fullName} (${member.gradeClass}). Рок за враќање: ${dueDateStr}.`);
 
   return { success: true, message: `Успешно издадена книга „${book.title}“ на ${member.fullName}.` };
 }
 
 // Return a borrowed book
-export function returnBook(loanId: string, notes?: string): { success: boolean; message: string } {
+export async function returnBook(loanId: string, notes?: string): Promise<{ success: boolean; message: string }> {
   const loans = getLoans();
   const books = getBooks();
-
-  const loanIndex = loans.findIndex(l => l.id === loanId);
-  if (loanIndex === -1) return { success: false, message: "Записот за позајмување не е пронајден." };
-
-  const loan = loans[loanIndex];
-  if (loan.status === 'вратена') return { success: false, message: "Книгата е веќе вратена." };
-
   const nowStr = new Date().toISOString().split('T')[0];
-  loan.status = 'вратена';
-  loan.returnDate = nowStr;
-  if (notes) loan.notes = (loan.notes ? loan.notes + " | " : "") + notes;
 
-  // Increase available copies in catalog
-  const bookIndex = books.findIndex(b => b.id === loan.bookId);
-  if (bookIndex !== -1) {
-    books[bookIndex].availableCopies = Math.min(books[bookIndex].totalCopies, books[bookIndex].availableCopies + 1);
-    saveBooks(books);
+  // Update Firestore loan doc
+  try {
+    const loanRef = doc(db, "loans", loanId);
+    await updateDoc(loanRef, {
+      status: 'вратена',
+      returnDate: nowStr,
+      ...(notes ? { notes } : {})
+    });
+  } catch (err) {
+    console.warn("Грешка при ажурирање на позајмувањето во Firestore:", err);
   }
 
-  loans[loanIndex] = loan;
-  saveLoans(loans);
+  const loanIndex = loans.findIndex(l => l.id === loanId);
+  if (loanIndex !== -1) {
+    const loan = loans[loanIndex];
+    loan.status = 'вратена';
+    loan.returnDate = nowStr;
+    if (notes) loan.notes = (loan.notes ? loan.notes + " | " : "") + notes;
 
-  logActivity('return', 'Вратена книга', `„${loan.bookTitle}“ е успешно вратена од ${loan.memberName} (${loan.memberGrade}).`);
+    const bookIndex = books.findIndex(b => b.id === loan.bookId);
+    if (bookIndex !== -1) {
+      books[bookIndex].availableCopies = Math.min(books[bookIndex].totalCopies, books[bookIndex].availableCopies + 1);
+      saveBooks(books);
+    }
 
-  return { success: true, message: `Книгата „${loan.bookTitle}“ е успешно раздолжена.` };
+    loans[loanIndex] = loan;
+    saveLoans(loans);
+    logActivity('return', 'Вратена книга', `„${loan.bookTitle}“ е успешно вратена од ${loan.memberName} (${loan.memberGrade}).`);
+  }
+
+  return { success: true, message: `Книгата е успешно раздолжена.` };
 }
 
 // Extend loan deadline (+14 days)
-export function extendLoan(loanId: string): { success: boolean; message: string } {
+export async function extendLoan(loanId: string): Promise<{ success: boolean; message: string }> {
   const loans = getLoans();
   const loanIndex = loans.findIndex(l => l.id === loanId);
-  if (loanIndex === -1) return { success: false, message: "Записот не е пронајден." };
+  
+  let newDueDateStr = '';
+  if (loanIndex !== -1) {
+    const loan = loans[loanIndex];
+    const currentDue = new Date(loan.dueDate);
+    currentDue.setDate(currentDue.getDate() + 14);
+    newDueDateStr = currentDue.toISOString().split('T')[0];
+  } else {
+    const d = new Date();
+    d.setDate(d.getDate() + 14);
+    newDueDateStr = d.toISOString().split('T')[0];
+  }
 
-  const loan = loans[loanIndex];
-  if (loan.status === 'вратена') return { success: false, message: "Книгата е веќе вратена." };
+  try {
+    const loanRef = doc(db, "loans", loanId);
+    await updateDoc(loanRef, {
+      dueDate: newDueDateStr,
+      status: 'активна'
+    });
+  } catch (err) {
+    console.warn("Грешка при продолжување на рокот во Firestore:", err);
+  }
 
-  const currentDue = new Date(loan.dueDate);
-  currentDue.setDate(currentDue.getDate() + 14);
-  const newDueDateStr = currentDue.toISOString().split('T')[0];
-
-  loan.dueDate = newDueDateStr;
-  loan.status = 'активна'; // reset status if was overdue
-  loan.notes = (loan.notes ? loan.notes + " | " : "") + "Продолжен рок за 14 дена";
-
-  loans[loanIndex] = loan;
-  saveLoans(loans);
-
-  logActivity('extend', 'Продолжен рок', `Рокот за „${loan.bookTitle}“ (член: ${loan.memberName}) е продолжен до ${newDueDateStr}.`);
+  if (loanIndex !== -1) {
+    const loan = loans[loanIndex];
+    loan.dueDate = newDueDateStr;
+    loan.status = 'активна';
+    loans[loanIndex] = loan;
+    saveLoans(loans);
+    logActivity('extend', 'Продолжен рок', `Рокот за „${loan.bookTitle}“ (член: ${loan.memberName}) е продолжен до ${newDueDateStr}.`);
+  }
 
   return { success: true, message: `Рокот е продолжен до ${newDueDateStr}.` };
 }

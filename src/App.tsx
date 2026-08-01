@@ -22,7 +22,8 @@ import { ExcelBookImportModal } from './components/ExcelBookImportModal';
 import { 
   getBooks, getMembers, getLoans, getLogs, getLibraryStats, 
   issueBook, returnBook, extendLoan, saveBooks, saveMembers, 
-  resetLibraryToFactoryDefault, clearDatabaseToEmpty, LIBRARY_STORAGE_EVENT 
+  resetLibraryToFactoryDefault, clearDatabaseToEmpty, LIBRARY_STORAGE_EVENT,
+  subscribeToLoans
 } from './services/storageService';
 
 import { Book, Member, Loan, ActivityLog, LibraryStats } from './types';
@@ -76,13 +77,21 @@ export default function App() {
   useEffect(() => {
     reloadData();
 
-    // Listen to real-time custom updates
+    // Real-time Firestore 'loans' subscription
+    const unsubscribeLoans = subscribeToLoans((firestoreLoans) => {
+      setLoans(firestoreLoans);
+    });
+
+    // Listen to real-time custom local updates
     const handleStorageEvent = () => {
       reloadData();
     };
 
     window.addEventListener(LIBRARY_STORAGE_EVENT, handleStorageEvent);
-    return () => window.removeEventListener(LIBRARY_STORAGE_EVENT, handleStorageEvent);
+    return () => {
+      unsubscribeLoans();
+      window.removeEventListener(LIBRARY_STORAGE_EVENT, handleStorageEvent);
+    };
   }, [reloadData]);
 
   // Keyboard shortcut ⌘K or Ctrl+K for quick stock search modal
@@ -98,8 +107,8 @@ export default function App() {
   }, []);
 
   // Handlers
-  const handleConfirmIssue = (bookId: string, memberId: string, dueDays: number, notes?: string) => {
-    const result = issueBook(bookId, memberId, dueDays, notes);
+  const handleConfirmIssue = async (bookId: string, memberId: string, dueDays: number, notes?: string) => {
+    const result = await issueBook(bookId, memberId, dueDays, notes);
     if (!result.success) {
       alert(result.message);
     } else {
@@ -108,12 +117,12 @@ export default function App() {
     }
   };
 
-  const handleReturnBook = (loanId: string) => {
-    returnBook(loanId);
+  const handleReturnBook = async (loanId: string) => {
+    await returnBook(loanId);
   };
 
-  const handleExtendLoan = (loanId: string) => {
-    extendLoan(loanId);
+  const handleExtendLoan = async (loanId: string) => {
+    await extendLoan(loanId);
   };
 
   const handleAddBook = (newBookData: Omit<Book, 'id' | 'addedDate' | 'availableCopies'>) => {
