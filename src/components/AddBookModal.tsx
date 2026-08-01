@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { X, Plus, BookOpen, MapPin, Layers } from 'lucide-react';
+import { X, Plus, BookOpen, MapPin, Layers, Loader2 } from 'lucide-react';
 import { Book, GenreType } from '../types';
+import { db } from '../firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 interface AddBookModalProps {
   isOpen: boolean;
@@ -36,14 +38,15 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({
   const [shelfLocation, setShelfLocation] = useState('');
   const [isbn, setIsbn] = useState('');
   const [description, setDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !author.trim()) return;
+    if (!title.trim() || !author.trim() || isSubmitting) return;
 
-    onAddBook({
+    const bookData = {
       title: title.trim(),
       author: author.trim(),
       genre,
@@ -54,9 +57,23 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({
       isbn: isbn.trim() || '978-9989-000-0',
       language: 'Македонски',
       description: description.trim() || 'Внесена нова книга во фондот на ООУ „Илинден“ Крива Паланка.'
-    });
+    };
 
-    onClose();
+    setIsSubmitting(true);
+    try {
+      // Save directly to Firestore using collection(db, "books") and addDoc
+      await addDoc(collection(db, "books"), {
+        ...bookData,
+        availableCopies: totalCopies,
+        addedDate: new Date().toISOString().split('T')[0]
+      });
+    } catch (err) {
+      console.error("Грешка при зачувување во Firestore:", err);
+    } finally {
+      onAddBook(bookData);
+      setIsSubmitting(false);
+      onClose();
+    }
   };
 
   return (
@@ -187,9 +204,11 @@ export const AddBookModal: React.FC<AddBookModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl hover:bg-amber-400 transition shadow-md"
+              disabled={isSubmitting}
+              className="px-5 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl hover:bg-amber-400 disabled:opacity-50 transition shadow-md flex items-center gap-2"
             >
-              Зачувај книга во фондот
+              {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>{isSubmitting ? 'Се зачувува во Firestore...' : 'Зачувај книга во фондот'}</span>
             </button>
           </div>
         </form>

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { X, UserPlus, Users, GraduationCap } from 'lucide-react';
+import { X, UserPlus, Users, GraduationCap, Loader2 } from 'lucide-react';
 import { Member, MemberType } from '../types';
+import { db } from '../firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 interface AddMemberModalProps {
   isOpen: boolean;
@@ -25,23 +27,39 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [notes, setNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim()) return;
+    if (!fullName.trim() || isSubmitting) return;
 
-    onAddMember({
+    const memberData = {
       fullName: fullName.trim(),
       gradeClass: type === 'ученик' ? gradeClass : (gradeClass.includes('Наставник') ? gradeClass : 'Наставник / Кадар'),
       type,
       phone: phone.trim() || '078 000-000',
       email: email.trim() || `${fullName.split(' ')[0].toLowerCase()}@oouilinden-kp.edu.mk`,
       notes: notes.trim() || 'Новорегистриран член во ООУ „Илинден“.'
-    });
+    };
 
-    onClose();
+    setIsSubmitting(true);
+    try {
+      // Save directly to Firestore using collection(db, "members") and addDoc
+      await addDoc(collection(db, "members"), {
+        ...memberData,
+        memberNumber: `ИЛ-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+        registrationDate: new Date().toISOString().split('T')[0],
+        active: true
+      });
+    } catch (err) {
+      console.error("Грешка при зачувување на член во Firestore:", err);
+    } finally {
+      onAddMember(memberData);
+      setIsSubmitting(false);
+      onClose();
+    }
   };
 
   return (
@@ -153,9 +171,11 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl hover:bg-amber-400 transition shadow-md"
+              disabled={isSubmitting}
+              className="px-5 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl hover:bg-amber-400 disabled:opacity-50 transition shadow-md flex items-center gap-2"
             >
-              Регистрирај член
+              {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              <span>{isSubmitting ? 'Се зачувува во Firestore...' : 'Регистрирај член'}</span>
             </button>
           </div>
         </form>
