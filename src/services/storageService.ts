@@ -16,6 +16,57 @@ function notifyChange() {
   window.dispatchEvent(new Event(LIBRARY_STORAGE_EVENT));
 }
 
+// Real-time Firestore subscription for 'books' collection
+export function subscribeToBooks(onBooksUpdate: (books: Book[]) => void) {
+  try {
+    const booksCollection = collection(db, "books");
+    const unsubscribe = onSnapshot(booksCollection, (snapshot) => {
+      const firestoreBooks: Book[] = snapshot.docs.map(docSnap => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          title: data.title || '',
+          author: data.author || '',
+          genre: data.genre || 'Друго',
+          publisher: data.publisher || '',
+          year: Number(data.year) || new Date().getFullYear(),
+          totalCopies: Number(data.totalCopies) || 1,
+          availableCopies: data.availableCopies !== undefined ? Number(data.availableCopies) : (Number(data.totalCopies) || 1),
+          shelfLocation: data.shelfLocation || '',
+          isbn: data.isbn || '',
+          language: data.language || 'Македонски',
+          addedDate: data.addedDate || new Date().toISOString().split('T')[0],
+          coverUrl: data.coverUrl || undefined,
+          coverBg: data.coverBg || undefined,
+          description: data.description || ''
+        };
+      });
+
+      // Combine with local books if any local books are not in Firestore
+      const localData = localStorage.getItem(BOOKS_KEY);
+      const localBooks: Book[] = localData ? JSON.parse(localData) : [];
+      const firestoreIds = new Set(firestoreBooks.map(b => b.id));
+      const mergedBooks = [
+        ...firestoreBooks,
+        ...localBooks.filter(b => !firestoreIds.has(b.id))
+      ];
+
+      mergedBooks.sort((a, b) => a.title.localeCompare(b.title, 'mk'));
+
+      localStorage.setItem(BOOKS_KEY, JSON.stringify(mergedBooks));
+      notifyChange();
+      onBooksUpdate(mergedBooks);
+    }, (error) => {
+      console.error("Грешка при преземање на 'books' во реално време од Firestore:", error);
+    });
+
+    return unsubscribe;
+  } catch (err) {
+    console.error("Грешка при поврзување со Firestore books:", err);
+    return () => {};
+  }
+}
+
 // Real-time Firestore subscription for 'loans' collection
 export function subscribeToLoans(onLoansUpdate: (loans: Loan[]) => void) {
   try {
@@ -179,6 +230,14 @@ export async function issueBook(bookId: string, memberId: string, dueDays: numbe
   book.availableCopies--;
   books[bookIndex] = book;
 
+  // Update Firestore book availableCopies if doc exists
+  try {
+    const bookRef = doc(db, "books", book.id);
+    await updateDoc(bookRef, { availableCopies: book.availableCopies });
+  } catch (err) {
+    // Silent catch if book is local only
+  }
+
   // Create Loan Record
   const now = new Date();
   const issueDateStr = now.toISOString().split('T')[0];
@@ -252,6 +311,12 @@ export async function returnBook(loanId: string, notes?: string): Promise<{ succ
     const bookIndex = books.findIndex(b => b.id === loan.bookId);
     if (bookIndex !== -1) {
       books[bookIndex].availableCopies = Math.min(books[bookIndex].totalCopies, books[bookIndex].availableCopies + 1);
+      try {
+        const bookRef = doc(db, "books", books[bookIndex].id);
+        await updateDoc(bookRef, { availableCopies: books[bookIndex].availableCopies });
+      } catch (err) {
+        // Silent catch
+      }
       saveBooks(books);
     }
 

@@ -24,7 +24,7 @@ import {
   getBooks, getMembers, getLoans, getLogs, getLibraryStats, 
   issueBook, returnBook, extendLoan, saveBooks, saveMembers, 
   resetLibraryToFactoryDefault, clearDatabaseToEmpty, LIBRARY_STORAGE_EVENT,
-  subscribeToLoans
+  subscribeToLoans, subscribeToBooks
 } from './services/storageService';
 
 import { Book, Member, Loan, ActivityLog, LibraryStats } from './types';
@@ -97,9 +97,13 @@ export default function App() {
   useEffect(() => {
     reloadData();
 
-    // Real-time Firestore 'loans' subscription
+    // Real-time Firestore 'loans' & 'books' subscriptions
     const unsubscribeLoans = subscribeToLoans((firestoreLoans) => {
       setLoans(firestoreLoans);
+    });
+
+    const unsubscribeBooks = subscribeToBooks((firestoreBooks) => {
+      setBooks(firestoreBooks);
     });
 
     // Listen to real-time custom local updates
@@ -110,6 +114,7 @@ export default function App() {
     window.addEventListener(LIBRARY_STORAGE_EVENT, handleStorageEvent);
     return () => {
       unsubscribeLoans();
+      unsubscribeBooks();
       window.removeEventListener(LIBRARY_STORAGE_EVENT, handleStorageEvent);
     };
   }, [reloadData]);

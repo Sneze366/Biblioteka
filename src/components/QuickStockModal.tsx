@@ -20,11 +20,27 @@ export const QuickStockModal: React.FC<QuickStockModalProps> = ({
   const [query, setQuery] = useState('');
 
   const filteredBooks = useMemo(() => {
-    if (!query.trim()) return books.slice(0, 8); // show popular initial sample
-    const q = query.toLowerCase().trim();
-    return books.filter(
-      b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q) || b.genre.toLowerCase().includes(q)
-    ).slice(0, 20);
+    const trimmedQuery = query.trim().toLowerCase();
+    if (!trimmedQuery) return books.slice(0, 12); // Initial sample
+
+    const words = trimmedQuery.split(/\s+/).filter(Boolean);
+
+    return books.filter(b => {
+      const titleLower = (b.title || '').toLowerCase();
+      const authorLower = (b.author || '').toLowerCase();
+      const genreLower = (b.genre || '').toLowerCase();
+      const isbnLower = (b.isbn || '').toLowerCase();
+      const shelfLower = (b.shelfLocation || '').toLowerCase();
+
+      // Ensure every entered word/partial match exists in title, author, genre, isbn, or shelf
+      return words.every(word =>
+        titleLower.includes(word) ||
+        authorLower.includes(word) ||
+        genreLower.includes(word) ||
+        isbnLower.includes(word) ||
+        shelfLower.includes(word)
+      );
+    }).slice(0, 50);
   }, [books, query]);
 
   if (!isOpen) return null;

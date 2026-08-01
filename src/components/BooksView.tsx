@@ -50,9 +50,24 @@ export const BooksView: React.FC<BooksViewProps> = ({
 
   // Filtered dataset
   const filteredBooks = useMemo(() => {
+    const trimmedQuery = searchQuery.trim().toLowerCase();
+    const words = trimmedQuery.split(/\s+/).filter(Boolean);
+
     return books.filter(b => {
-      const q = searchQuery.toLowerCase().trim();
-      const matchesQuery = !q || b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q) || b.isbn.includes(q);
+      const titleLower = (b.title || '').toLowerCase();
+      const authorLower = (b.author || '').toLowerCase();
+      const genreLower = (b.genre || '').toLowerCase();
+      const isbnLower = (b.isbn || '').toLowerCase();
+      const shelfLower = (b.shelfLocation || '').toLowerCase();
+
+      const matchesQuery = !words.length || words.every(word =>
+        titleLower.includes(word) ||
+        authorLower.includes(word) ||
+        genreLower.includes(word) ||
+        isbnLower.includes(word) ||
+        shelfLower.includes(word)
+      );
+
       const matchesGenre = selectedGenre === 'сите' ? true : b.genre === selectedGenre;
       const matchesStock = 
         availabilityFilter === 'сите' ? true :
