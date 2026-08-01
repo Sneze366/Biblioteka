@@ -5,6 +5,7 @@ const BOOKS_KEY = 'ilinden_library_books_v1';
 const MEMBERS_KEY = 'ilinden_library_members_v1';
 const LOANS_KEY = 'ilinden_library_loans_v1';
 const LOGS_KEY = 'ilinden_library_logs_v1';
+const INITIALIZED_KEY = 'ilinden_library_initialized_v2';
 
 // Custom event name for instant cross-component update
 export const LIBRARY_STORAGE_EVENT = 'ilinden_library_updated';
@@ -13,14 +14,11 @@ function notifyChange() {
   window.dispatchEvent(new Event(LIBRARY_STORAGE_EVENT));
 }
 
-// Initialize LocalStorage with seed data if not present
+// Initialize LocalStorage with seed data ONLY if app was never initialized before
 export function initializeStorageIfNeeded(): { books: Book[]; members: Member[]; loans: Loan[]; logs: ActivityLog[] } {
-  const existingBooks = localStorage.getItem(BOOKS_KEY);
-  const existingMembers = localStorage.getItem(MEMBERS_KEY);
-  const existingLoans = localStorage.getItem(LOANS_KEY);
-  const existingLogs = localStorage.getItem(LOGS_KEY);
+  const isInitialized = localStorage.getItem(INITIALIZED_KEY);
 
-  if (!existingBooks || !existingMembers || !existingLoans) {
+  if (!isInitialized) {
     const books = generateInitialBooks();
     const members = generateInitialMembers();
     const { loans, logs } = generateInitialLoansAndActivity(books, members);
@@ -29,49 +27,62 @@ export function initializeStorageIfNeeded(): { books: Book[]; members: Member[];
     localStorage.setItem(MEMBERS_KEY, JSON.stringify(members));
     localStorage.setItem(LOANS_KEY, JSON.stringify(loans));
     localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
+    localStorage.setItem(INITIALIZED_KEY, 'true');
 
     return { books, members, loans, logs };
   }
 
+  const existingBooks = localStorage.getItem(BOOKS_KEY);
+  const existingMembers = localStorage.getItem(MEMBERS_KEY);
+  const existingLoans = localStorage.getItem(LOANS_KEY);
+  const existingLogs = localStorage.getItem(LOGS_KEY);
+
   return {
-    books: JSON.parse(existingBooks),
-    members: JSON.parse(existingMembers),
-    loans: JSON.parse(existingLoans),
+    books: existingBooks ? JSON.parse(existingBooks) : [],
+    members: existingMembers ? JSON.parse(existingMembers) : [],
+    loans: existingLoans ? JSON.parse(existingLoans) : [],
     logs: existingLogs ? JSON.parse(existingLogs) : []
   };
 }
 
 export function getBooks(): Book[] {
+  initializeStorageIfNeeded();
   const data = localStorage.getItem(BOOKS_KEY);
-  return data ? JSON.parse(data) : initializeStorageIfNeeded().books;
+  return data ? JSON.parse(data) : [];
 }
 
 export function saveBooks(books: Book[]) {
   localStorage.setItem(BOOKS_KEY, JSON.stringify(books));
+  localStorage.setItem(INITIALIZED_KEY, 'true');
   notifyChange();
 }
 
 export function getMembers(): Member[] {
+  initializeStorageIfNeeded();
   const data = localStorage.getItem(MEMBERS_KEY);
-  return data ? JSON.parse(data) : initializeStorageIfNeeded().members;
+  return data ? JSON.parse(data) : [];
 }
 
 export function saveMembers(members: Member[]) {
   localStorage.setItem(MEMBERS_KEY, JSON.stringify(members));
+  localStorage.setItem(INITIALIZED_KEY, 'true');
   notifyChange();
 }
 
 export function getLoans(): Loan[] {
+  initializeStorageIfNeeded();
   const data = localStorage.getItem(LOANS_KEY);
-  return data ? JSON.parse(data) : initializeStorageIfNeeded().loans;
+  return data ? JSON.parse(data) : [];
 }
 
 export function saveLoans(loans: Loan[]) {
   localStorage.setItem(LOANS_KEY, JSON.stringify(loans));
+  localStorage.setItem(INITIALIZED_KEY, 'true');
   notifyChange();
 }
 
 export function getLogs(): ActivityLog[] {
+  initializeStorageIfNeeded();
   const data = localStorage.getItem(LOGS_KEY);
   return data ? JSON.parse(data) : [];
 }
@@ -237,6 +248,7 @@ export function getLibraryStats(): LibraryStats {
 
 // Reset data back to default factory seed
 export function resetLibraryToFactoryDefault() {
+  localStorage.removeItem(INITIALIZED_KEY);
   localStorage.removeItem(BOOKS_KEY);
   localStorage.removeItem(MEMBERS_KEY);
   localStorage.removeItem(LOANS_KEY);
@@ -251,5 +263,6 @@ export function clearDatabaseToEmpty() {
   localStorage.setItem(MEMBERS_KEY, JSON.stringify([]));
   localStorage.setItem(LOANS_KEY, JSON.stringify([]));
   localStorage.setItem(LOGS_KEY, JSON.stringify([]));
+  localStorage.setItem(INITIALIZED_KEY, 'true');
   notifyChange();
 }
