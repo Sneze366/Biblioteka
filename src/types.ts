@@ -66,7 +66,7 @@ export interface Loan {
 export interface ActivityLog {
   id: string;
   timestamp: string; // ISO or readable
-  type: 'issue' | 'return' | 'extend' | 'add_book' | 'add_member' | 'system';
+  type: 'issue' | 'return' | 'extend' | 'add_book' | 'add_member' | 'delete_book' | 'update_book' | 'delete_member' | 'update_member' | 'system';
   title: string;
   details: string;
   user?: string;

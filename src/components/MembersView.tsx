@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Users, Search, Filter, UserPlus, BookOpen, Clock, 
-  ChevronRight, GraduationCap, History, Phone, Mail, BadgeCheck, AlertCircle, ChevronLeft, FileSpreadsheet
+  ChevronRight, GraduationCap, History, Phone, Mail, BadgeCheck, AlertCircle, ChevronLeft, FileSpreadsheet,
+  Trash2
 } from 'lucide-react';
 import { Member, Loan } from '../types';
 
@@ -11,6 +12,7 @@ interface MembersViewProps {
   onOpenAddMemberModal: () => void;
   onOpenExcelImportModal?: () => void;
   onSelectMemberHistory: (member: Member) => void;
+  onDeleteMember?: (memberId: string) => void;
   isAdmin?: boolean;
 }
 
@@ -27,6 +29,7 @@ export const MembersView: React.FC<MembersViewProps> = ({
   onOpenAddMemberModal,
   onOpenExcelImportModal,
   onSelectMemberHistory,
+  onDeleteMember,
   isAdmin = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -209,7 +212,23 @@ export const MembersView: React.FC<MembersViewProps> = ({
 
                 <h3 className="font-bold text-slate-900 text-sm group-hover:text-amber-600 transition flex items-center justify-between">
                   <span>{member.fullName}</span>
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition" />
+                  <div className="flex items-center gap-1">
+                    {isAdmin && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`Дали сте сигурни дека сакате да го избришете членот „${member.fullName}“?`)) {
+                            onDeleteMember?.(member.id);
+                          }
+                        }}
+                        title="Избриши член"
+                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition" />
+                  </div>
                 </h3>
 
                 <p className="text-xs text-slate-500 mt-0.5 capitalize">

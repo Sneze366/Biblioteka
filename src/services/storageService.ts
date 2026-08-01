@@ -1,7 +1,7 @@
 import { Book, Member, Loan, ActivityLog, LibraryStats, LoanStatus } from '../types';
 import { generateInitialBooks, generateInitialMembers, generateInitialLoansAndActivity } from '../data/seedData';
 import { db } from '../firebase';
-import { collection, addDoc, doc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, deleteDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
 const BOOKS_KEY = 'ilinden_library_books_v1';
 const MEMBERS_KEY = 'ilinden_library_members_v1';
@@ -63,6 +63,51 @@ export function subscribeToBooks(onBooksUpdate: (books: Book[]) => void) {
     return unsubscribe;
   } catch (err) {
     console.error("Грешка при поврзување со Firestore books:", err);
+    return () => {};
+  }
+}
+
+// Real-time Firestore subscription for 'members' collection
+export function subscribeToMembers(onMembersUpdate: (members: Member[]) => void) {
+  try {
+    const membersCollection = collection(db, "members");
+    const unsubscribe = onSnapshot(membersCollection, (snapshot) => {
+      const firestoreMembers: Member[] = snapshot.docs.map(docSnap => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          memberNumber: data.memberNumber || `ИЛ-2026-${docSnap.id.substring(0, 4)}`,
+          fullName: data.fullName || '',
+          gradeClass: data.gradeClass || '',
+          type: data.type || 'ученик',
+          phone: data.phone || '',
+          email: data.email || '',
+          registrationDate: data.registrationDate || new Date().toISOString().split('T')[0],
+          active: data.active !== undefined ? data.active : true,
+          notes: data.notes || ''
+        };
+      });
+
+      const localData = localStorage.getItem(MEMBERS_KEY);
+      const localMembers: Member[] = localData ? JSON.parse(localData) : [];
+      const firestoreIds = new Set(firestoreMembers.map(m => m.id));
+      const mergedMembers = [
+        ...firestoreMembers,
+        ...localMembers.filter(m => !firestoreIds.has(m.id))
+      ];
+
+      mergedMembers.sort((a, b) => a.fullName.localeCompare(b.fullName, 'mk'));
+
+      localStorage.setItem(MEMBERS_KEY, JSON.stringify(mergedMembers));
+      notifyChange();
+      onMembersUpdate(mergedMembers);
+    }, (error) => {
+      console.error("Грешка при преземање на 'members' во реално време од Firestore:", error);
+    });
+
+    return unsubscribe;
+  } catch (err) {
+    console.error("Грешка при поврзување со Firestore members:", err);
     return () => {};
   }
 }
@@ -418,4 +463,113 @@ export function clearDatabaseToEmpty() {
   localStorage.setItem(LOGS_KEY, JSON.stringify([]));
   localStorage.setItem(INITIALIZED_KEY, 'true');
   notifyChange();
+}
+
+// Delete book (Firestore + local)
+export async function deleteBook(bookId: string): Promise<{ success: boolean; message: string }> {
+  const books = getBooks();
+  const book = books.find(b => b.id === bookId);
+  const bookTitle = book ? book.title : 'книга';
+
+  try {
+    const bookRef = doc(db, "books", bookId);
+    await deleteDoc(bookRef);
+  } catch (err) {
+    console.warn("Грешка при бришење од Firestore (books):", err);
+  }
+
+  const updated = books.filter(b => b.id !== bookId);
+  saveBooks(updated);
+  logActivity('delete_book', 'Избришана книга', `Книгата „${bookTitle}“ е отстранета од базата.`);
+
+  return { success: true, message: `Книгата „${bookTitle}“ е успешно избришана.` };
+}
+
+// Update book (Firestore + local)
+export async function updateBook(updatedBook: Book): Promise<{ success: boolean; message: string }> {
+  const books = getBooks();
+  const index = books.findIndex(b => b.id === updatedBook.id);
+
+  try {
+    const bookRef = doc(db, "books", updatedBook.id);
+    await setDoc(bookRef, {
+      title: updatedBook.title,
+      author: updatedBook.author,
+      genre: updatedBook.genre,
+      publisher: updatedBook.publisher,
+      year: updatedBook.year,
+      totalCopies: updatedBook.totalCopies,
+      availableCopies: updatedBook.availableCopies,
+      shelfLocation: updatedBook.shelfLocation,
+      isbn: updatedBook.isbn,
+      language: updatedBook.language,
+      description: updatedBook.description,
+      addedDate: updatedBook.addedDate || new Date().toISOString().split('T')[0]
+    }, { merge: true });
+  } catch (err) {
+    console.warn("Грешка при ажурирање во Firestore (books):", err);
+  }
+
+  if (index !== -1) {
+    books[index] = updatedBook;
+  } else {
+    books.push(updatedBook);
+  }
+  saveBooks(books);
+  logActivity('update_book', 'Уредена книга', `Податоците за книгата „${updatedBook.title}“ (рафт: ${updatedBook.shelfLocation}, примероци: ${updatedBook.availableCopies}/${updatedBook.totalCopies}) се успешно изменети.`);
+
+  return { success: true, message: `Книгата „${updatedBook.title}“ е успешно уредена.` };
+}
+
+// Delete member (Firestore + local)
+export async function deleteMember(memberId: string): Promise<{ success: boolean; message: string }> {
+  const members = getMembers();
+  const member = members.find(m => m.id === memberId);
+  const memberName = member ? member.fullName : 'член';
+
+  try {
+    const memberRef = doc(db, "members", memberId);
+    await deleteDoc(memberRef);
+  } catch (err) {
+    console.warn("Грешка при бришење од Firestore (members):", err);
+  }
+
+  const updated = members.filter(m => m.id !== memberId);
+  saveMembers(updated);
+  logActivity('delete_member', 'Избришан член', `Членот „${memberName}“ е отстранет од базата.`);
+
+  return { success: true, message: `Членот „${memberName}“ е успешно избришан.` };
+}
+
+// Update member (Firestore + local)
+export async function updateMember(updatedMember: Member): Promise<{ success: boolean; message: string }> {
+  const members = getMembers();
+  const index = members.findIndex(m => m.id === updatedMember.id);
+
+  try {
+    const memberRef = doc(db, "members", updatedMember.id);
+    await setDoc(memberRef, {
+      fullName: updatedMember.fullName,
+      gradeClass: updatedMember.gradeClass,
+      type: updatedMember.type,
+      phone: updatedMember.phone,
+      email: updatedMember.email,
+      notes: updatedMember.notes,
+      active: updatedMember.active,
+      memberNumber: updatedMember.memberNumber,
+      registrationDate: updatedMember.registrationDate
+    }, { merge: true });
+  } catch (err) {
+    console.warn("Грешка при ажурирање во Firestore (members):", err);
+  }
+
+  if (index !== -1) {
+    members[index] = updatedMember;
+  } else {
+    members.push(updatedMember);
+  }
+  saveMembers(members);
+  logActivity('update_member', 'Уреден член', `Податоците за членот „${updatedMember.fullName}“ се изменети.`);
+
+  return { success: true, message: `Членот „${updatedMember.fullName}“ е успешно уреден.` };
 }

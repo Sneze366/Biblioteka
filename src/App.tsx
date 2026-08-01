@@ -24,7 +24,8 @@ import {
   getBooks, getMembers, getLoans, getLogs, getLibraryStats, 
   issueBook, returnBook, extendLoan, saveBooks, saveMembers, 
   resetLibraryToFactoryDefault, clearDatabaseToEmpty, LIBRARY_STORAGE_EVENT,
-  subscribeToLoans, subscribeToBooks
+  subscribeToLoans, subscribeToBooks, subscribeToMembers,
+  deleteBook, updateBook, deleteMember
 } from './services/storageService';
 
 import { Book, Member, Loan, ActivityLog, LibraryStats } from './types';
@@ -97,13 +98,17 @@ export default function App() {
   useEffect(() => {
     reloadData();
 
-    // Real-time Firestore 'loans' & 'books' subscriptions
+    // Real-time Firestore 'loans', 'books', & 'members' subscriptions
     const unsubscribeLoans = subscribeToLoans((firestoreLoans) => {
       setLoans(firestoreLoans);
     });
 
     const unsubscribeBooks = subscribeToBooks((firestoreBooks) => {
       setBooks(firestoreBooks);
+    });
+
+    const unsubscribeMembers = subscribeToMembers((firestoreMembers) => {
+      setMembers(firestoreMembers);
     });
 
     // Listen to real-time custom local updates
@@ -115,6 +120,7 @@ export default function App() {
     return () => {
       unsubscribeLoans();
       unsubscribeBooks();
+      unsubscribeMembers();
       window.removeEventListener(LIBRARY_STORAGE_EVENT, handleStorageEvent);
     };
   }, [reloadData]);
@@ -170,6 +176,18 @@ export default function App() {
       active: true
     };
     saveMembers([newMember, ...members]);
+  };
+
+  const handleDeleteBook = async (bookId: string) => {
+    await deleteBook(bookId);
+  };
+
+  const handleUpdateBook = async (updatedBook: Book) => {
+    await updateBook(updatedBook);
+  };
+
+  const handleDeleteMember = async (memberId: string) => {
+    await deleteMember(memberId);
   };
 
   const handleImportMembers = (importedList: Member[], replaceExisting: boolean) => {
@@ -277,6 +295,8 @@ export default function App() {
             onOpenAddBookModal={() => setIsAddBookModalOpen(true)}
             onOpenBookImportModal={() => setIsExcelBookImportModalOpen(true)}
             onSelectBookForIssue={handleOpenIssueForBook}
+            onDeleteBook={handleDeleteBook}
+            onUpdateBook={handleUpdateBook}
             isAdmin={isAdmin}
           />
         )}
@@ -288,6 +308,7 @@ export default function App() {
             onOpenAddMemberModal={() => setIsAddMemberModalOpen(true)}
             onOpenExcelImportModal={() => setIsExcelImportModalOpen(true)}
             onSelectMemberHistory={m => setSelectedMemberForHistory(m)}
+            onDeleteMember={handleDeleteMember}
             isAdmin={isAdmin}
           />
         )}

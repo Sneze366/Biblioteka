@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Search, BookOpen, Filter, Plus, LayoutGrid, List, 
-  MapPin, CheckCircle2, AlertCircle, ArrowRightLeft, BookMarked, ChevronLeft, ChevronRight, Info, FileSpreadsheet
+  MapPin, CheckCircle2, AlertCircle, ArrowRightLeft, BookMarked, ChevronLeft, ChevronRight, Info, FileSpreadsheet,
+  Edit3, Trash2
 } from 'lucide-react';
 import { Book, GenreType, Loan } from '../types';
+import { EditBookModal } from './EditBookModal';
 
 interface BooksViewProps {
   books: Book[];
@@ -11,6 +13,8 @@ interface BooksViewProps {
   onOpenAddBookModal: () => void;
   onOpenBookImportModal?: () => void;
   onSelectBookForIssue: (book: Book) => void;
+  onDeleteBook?: (bookId: string) => void;
+  onUpdateBook?: (updatedBook: Book) => void;
   isAdmin?: boolean;
 }
 
@@ -34,6 +38,8 @@ export const BooksView: React.FC<BooksViewProps> = ({
   onOpenAddBookModal,
   onOpenBookImportModal,
   onSelectBookForIssue,
+  onDeleteBook,
+  onUpdateBook,
   isAdmin = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,8 +51,9 @@ export const BooksView: React.FC<BooksViewProps> = ({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(24);
 
-  // Selected Book Details Modal
+  // Selected Book Details Modal & Edit Modal
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [editingBook, setEditingBook] = useState<Book | null>(null);
 
   // Filtered dataset
   const filteredBooks = useMemo(() => {
@@ -311,17 +318,37 @@ export const BooksView: React.FC<BooksViewProps> = ({
                     </button>
 
                     {isAdmin && (
-                      <button
-                        disabled={!inStock}
-                        onClick={() => onSelectBookForIssue(book)}
-                        className={`text-xs px-2.5 py-1 rounded-lg font-bold transition ${
-                          inStock
-                            ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-sm'
-                            : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                        }`}
-                      >
-                        Позајми
-                      </button>
+                      <>
+                        <button
+                          onClick={() => setEditingBook(book)}
+                          title="Уреди книга"
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Дали сте сигурни дека сакате да ја избришете книгата „${book.title}“?`)) {
+                              onDeleteBook?.(book.id);
+                            }
+                          }}
+                          title="Избриши книга"
+                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          disabled={!inStock}
+                          onClick={() => onSelectBookForIssue(book)}
+                          className={`text-xs px-2.5 py-1 rounded-lg font-bold transition ${
+                            inStock
+                              ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-sm'
+                              : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                          }`}
+                        >
+                          Позајми
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -362,25 +389,45 @@ export const BooksView: React.FC<BooksViewProps> = ({
                         <span className="font-bold text-rose-600">0 од {book.totalCopies} (Сите позајмени)</span>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-right space-x-2">
+                    <td className="py-3 px-4 text-right space-x-1">
                       <button
                         onClick={() => setSelectedBook(book)}
-                        className="text-xs text-slate-600 hover:text-slate-900 font-medium underline"
+                        className="text-xs text-slate-600 hover:text-slate-900 font-medium underline px-1"
                       >
                         Детали
                       </button>
                       {isAdmin && (
-                        <button
-                          disabled={book.availableCopies === 0}
-                          onClick={() => onSelectBookForIssue(book)}
-                          className={`text-xs px-2.5 py-1 rounded-lg font-bold ${
-                            book.availableCopies > 0
-                              ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
-                              : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                          }`}
-                        >
-                          Позајми
-                        </button>
+                        <>
+                          <button
+                            onClick={() => setEditingBook(book)}
+                            title="Уреди книга"
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition inline-block align-middle"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Дали сте сигурни дека сакате да ја избришете книгата „${book.title}“?`)) {
+                                onDeleteBook?.(book.id);
+                              }
+                            }}
+                            title="Избриши книга"
+                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition inline-block align-middle"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            disabled={book.availableCopies === 0}
+                            onClick={() => onSelectBookForIssue(book)}
+                            className={`text-xs px-2.5 py-1 rounded-lg font-bold ${
+                              book.availableCopies > 0
+                                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+                                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                            }`}
+                          >
+                            Позајми
+                          </button>
+                        </>
                       )}
                     </td>
                   </tr>
@@ -505,29 +552,69 @@ export const BooksView: React.FC<BooksViewProps> = ({
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                onClick={() => setSelectedBook(null)}
-                className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-medium rounded-xl hover:bg-slate-200 transition"
-              >
-                Затвори
-              </button>
-              {isAdmin && selectedBook.availableCopies > 0 && (
+            <div className="flex justify-between items-center gap-2 pt-2 border-t border-slate-100">
+              {isAdmin ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const b = selectedBook;
+                      setSelectedBook(null);
+                      setEditingBook(b);
+                    }}
+                    className="px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-xl hover:bg-blue-100 transition flex items-center gap-1"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" /> Уреди
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Дали сте сигурни дека сакате да ја избришете книгата „${selectedBook.title}“?`)) {
+                        const id = selectedBook.id;
+                        setSelectedBook(null);
+                        onDeleteBook?.(id);
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-rose-50 text-rose-700 text-xs font-bold rounded-xl hover:bg-rose-100 transition flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Избриши
+                  </button>
+                </div>
+              ) : <div></div>}
+
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => {
-                    const b = selectedBook;
-                    setSelectedBook(null);
-                    onSelectBookForIssue(b);
-                  }}
-                  className="px-4 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl hover:bg-amber-400 transition"
+                  onClick={() => setSelectedBook(null)}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-medium rounded-xl hover:bg-slate-200 transition"
                 >
-                  Позајми книга
+                  Затвори
                 </button>
-              )}
+                {isAdmin && selectedBook.availableCopies > 0 && (
+                  <button
+                    onClick={() => {
+                      const b = selectedBook;
+                      setSelectedBook(null);
+                      onSelectBookForIssue(b);
+                    }}
+                    className="px-4 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl hover:bg-amber-400 transition"
+                  >
+                    Позајми книга
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Edit Book Modal */}
+      <EditBookModal
+        isOpen={editingBook !== null}
+        book={editingBook}
+        onClose={() => setEditingBook(null)}
+        onSaveBook={(updated) => {
+          onUpdateBook?.(updated);
+          setEditingBook(null);
+        }}
+      />
 
     </div>
   );
