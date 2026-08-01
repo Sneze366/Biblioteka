@@ -1,0 +1,6 @@
+{
+  "name": "Библиотека ООУ „Илинден“ - Крива Паланка",
+  "description": "Целосен систем за управување со училишна библиотека: евиденција на 5000+ книги, 1000+ членови, позајмувања и пребарување во реално време.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
