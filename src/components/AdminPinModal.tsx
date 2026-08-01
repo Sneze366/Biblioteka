@@ -76,7 +76,7 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
                 setError(false);
                 setPin(e.target.value);
               }}
-              placeholder="Внесете PIN (2026)"
+              placeholder="Внесете PIN"
               className={`w-full text-center text-2xl font-mono tracking-widest py-3 px-4 rounded-2xl border ${
                 error
                   ? 'border-rose-500 bg-rose-50 text-rose-900 focus:ring-rose-500'
@@ -90,7 +90,7 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
           {error && (
             <div className="flex items-center justify-center gap-1.5 text-xs text-rose-600 font-semibold bg-rose-50 p-2 rounded-xl border border-rose-200 animate-in fade-in">
               <AlertCircle className="w-4 h-4" />
-              <span>Погрешен PIN код! Стандарден PIN: <strong>2026</strong></span>
+              <span>Погрешен PIN код! Ве молиме обидете се повторно.</span>
             </div>
           )}
 
@@ -151,10 +151,6 @@ export const AdminPinModal: React.FC<AdminPinModalProps> = ({
             </button>
           </div>
         </form>
-
-        <p className="text-[11px] text-center text-[#8B9285]">
-          Забелешка: Стандардниот администраторски код е <strong className="text-[#A8763E]">2026</strong>.
-        </p>
 
       </div>
     </div>
