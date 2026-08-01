@@ -11,6 +11,7 @@ interface MembersViewProps {
   onOpenAddMemberModal: () => void;
   onOpenExcelImportModal?: () => void;
   onSelectMemberHistory: (member: Member) => void;
+  isAdmin?: boolean;
 }
 
 const GRADES_LIST = [
@@ -26,6 +27,7 @@ export const MembersView: React.FC<MembersViewProps> = ({
   onOpenAddMemberModal,
   onOpenExcelImportModal,
   onSelectMemberHistory,
+  isAdmin = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGrade, setSelectedGrade] = useState<string>('Сите одделенија');
@@ -93,25 +95,27 @@ export const MembersView: React.FC<MembersViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap self-start md:self-auto">
-          {onOpenExcelImportModal && (
-            <button
-              onClick={onOpenExcelImportModal}
-              className="bg-[#5D8A66] hover:bg-[#4D7454] text-white font-bold px-4 py-2.5 rounded-2xl text-sm transition flex items-center gap-2 shadow-sm"
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              <span>Импорт од Excel</span>
-            </button>
-          )}
+        {isAdmin && (
+          <div className="flex items-center gap-2 flex-wrap self-start md:self-auto">
+            {onOpenExcelImportModal && (
+              <button
+                onClick={onOpenExcelImportModal}
+                className="bg-[#5D8A66] hover:bg-[#4D7454] text-white font-bold px-4 py-2.5 rounded-2xl text-sm transition flex items-center gap-2 shadow-sm"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                <span>Импорт од Excel</span>
+              </button>
+            )}
 
-          <button
-            onClick={onOpenAddMemberModal}
-            className="bg-[#A8763E] hover:bg-[#966835] text-white font-bold px-4 py-2.5 rounded-2xl text-sm transition flex items-center gap-2 shadow-sm"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Регистрирај нов член</span>
-          </button>
-        </div>
+            <button
+              onClick={onOpenAddMemberModal}
+              className="bg-[#A8763E] hover:bg-[#966835] text-white font-bold px-4 py-2.5 rounded-2xl text-sm transition flex items-center gap-2 shadow-sm"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Регистрирај нов член</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Search & Grade Filters */}

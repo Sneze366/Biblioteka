@@ -14,6 +14,8 @@ interface SettingsViewProps {
   onClearDatabase?: () => void;
   onOpenExcelImportModal?: () => void;
   onOpenExcelBookImportModal?: () => void;
+  isAdmin?: boolean;
+  onOpenAdminModal?: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -25,6 +27,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onClearDatabase,
   onOpenExcelImportModal,
   onOpenExcelBookImportModal,
+  isAdmin = false,
+  onOpenAdminModal,
 }) => {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [showClearModal, setShowClearModal] = useState(false);
@@ -131,33 +135,35 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </p>
 
           <div className="space-y-2 pt-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-              {onOpenExcelImportModal && (
-                <button
-                  onClick={onOpenExcelImportModal}
-                  className="w-full bg-[#5D8A66] hover:bg-[#4D7454] text-white font-bold py-2.5 px-3 rounded-2xl text-xs transition flex items-center justify-between shadow-xs"
-                >
-                  <span className="flex items-center gap-1.5">
-                    <FileSpreadsheet className="w-4 h-4 text-white shrink-0" />
-                    Увези ученици од Excel
-                  </span>
-                  <Upload className="w-3.5 h-3.5 text-emerald-100 shrink-0" />
-                </button>
-              )}
+            {isAdmin ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                {onOpenExcelImportModal && (
+                  <button
+                    onClick={onOpenExcelImportModal}
+                    className="w-full bg-[#5D8A66] hover:bg-[#4D7454] text-white font-bold py-2.5 px-3 rounded-2xl text-xs transition flex items-center justify-between shadow-xs"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <FileSpreadsheet className="w-4 h-4 text-white shrink-0" />
+                      Увези ученици од Excel
+                    </span>
+                    <Upload className="w-3.5 h-3.5 text-emerald-100 shrink-0" />
+                  </button>
+                )}
 
-              {onOpenExcelBookImportModal && (
-                <button
-                  onClick={onOpenExcelBookImportModal}
-                  className="w-full bg-[#4A5D4E] hover:bg-[#3A4B3D] text-white font-bold py-2.5 px-3 rounded-2xl text-xs transition flex items-center justify-between shadow-xs"
-                >
-                  <span className="flex items-center gap-1.5">
-                    <BookOpen className="w-4 h-4 text-[#D9E4DD] shrink-0" />
-                    Увези книги од Excel
-                  </span>
-                  <Upload className="w-3.5 h-3.5 text-emerald-100 shrink-0" />
-                </button>
-              )}
-            </div>
+                {onOpenExcelBookImportModal && (
+                  <button
+                    onClick={onOpenExcelBookImportModal}
+                    className="w-full bg-[#4A5D4E] hover:bg-[#3A4B3D] text-white font-bold py-2.5 px-3 rounded-2xl text-xs transition flex items-center justify-between shadow-xs"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <BookOpen className="w-4 h-4 text-[#D9E4DD] shrink-0" />
+                      Увези книги од Excel
+                    </span>
+                    <Upload className="w-3.5 h-3.5 text-emerald-100 shrink-0" />
+                  </button>
+                )}
+              </div>
+            ) : null}
 
             <button
               onClick={handleExportBooksCSV}
@@ -202,21 +208,39 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           )}
 
           <div className="pt-2 space-y-2">
-            <button
-              onClick={() => setShowClearModal(true)}
-              className="w-full bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 font-bold py-2.5 px-4 rounded-2xl text-xs transition flex items-center justify-center gap-2 shadow-sm"
-            >
-              <Trash2 className="w-4 h-4 text-rose-600" />
-              <span>Започни со празна база (Избриши ги сите демо книги и членови)</span>
-            </button>
+            {isAdmin ? (
+              <>
+                <button
+                  onClick={() => setShowClearModal(true)}
+                  className="w-full bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 font-bold py-2.5 px-4 rounded-2xl text-xs transition flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <Trash2 className="w-4 h-4 text-rose-600" />
+                  <span>Започни со празна база (Избриши ги сите демо книги и членови)</span>
+                </button>
 
-            <button
-              onClick={() => setShowResetModal(true)}
-              className="w-full bg-[#A8763E] hover:bg-[#966835] text-white font-bold py-2.5 px-4 rounded-2xl text-xs transition flex items-center justify-center gap-2 shadow-sm"
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span>Ресетирај на фабричка демо база (~5000 книги и ~1000 членови)</span>
-            </button>
+                <button
+                  onClick={() => setShowResetModal(true)}
+                  className="w-full bg-[#A8763E] hover:bg-[#966835] text-white font-bold py-2.5 px-4 rounded-2xl text-xs transition flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>Ресетирај на фабричка демо база (~5000 книги и ~1000 членови)</span>
+                </button>
+              </>
+            ) : (
+              <div className="bg-[#FAF8F5] border border-[#A8763E]/30 rounded-2xl p-4 text-center space-y-2">
+                <p className="text-xs text-[#2C332D]">
+                  За да ресетирате или бришете податоци во базата, потребен е <strong>Администраторски PIN код (2026)</strong>.
+                </p>
+                {onOpenAdminModal && (
+                  <button
+                    onClick={onOpenAdminModal}
+                    className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs inline-flex items-center gap-1.5 transition shadow-sm"
+                  >
+                    <span>Најави се како Администратор</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

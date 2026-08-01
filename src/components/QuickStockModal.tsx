@@ -7,6 +7,7 @@ interface QuickStockModalProps {
   onClose: () => void;
   books: Book[];
   onIssueBook: (book: Book) => void;
+  isAdmin?: boolean;
 }
 
 export const QuickStockModal: React.FC<QuickStockModalProps> = ({
@@ -14,6 +15,7 @@ export const QuickStockModal: React.FC<QuickStockModalProps> = ({
   onClose,
   books,
   onIssueBook,
+  isAdmin = false,
 }) => {
   const [query, setQuery] = useState('');
 
@@ -134,21 +136,23 @@ export const QuickStockModal: React.FC<QuickStockModalProps> = ({
                       )}
                     </div>
 
-                    <button
-                      disabled={!inStock}
-                      onClick={() => {
-                        onClose();
-                        onIssueBook(book);
-                      }}
-                      className={`text-xs px-3 py-1.5 rounded-lg font-medium flex items-center gap-1 transition ${
-                        inStock
-                          ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-sm'
-                          : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                      }`}
-                    >
-                      <span>Позајми</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </button>
+                    {isAdmin && (
+                      <button
+                        disabled={!inStock}
+                        onClick={() => {
+                          onClose();
+                          onIssueBook(book);
+                        }}
+                        className={`text-xs px-3 py-1.5 rounded-lg font-medium flex items-center gap-1 transition ${
+                          inStock
+                            ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-sm'
+                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        }`}
+                      >
+                        <span>Позајми</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
                 </div>
               );

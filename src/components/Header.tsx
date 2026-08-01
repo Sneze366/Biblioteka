@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Search, PlusCircle, UserPlus, ArrowRightLeft, ShieldCheck, Clock } from 'lucide-react';
+import { BookOpen, Search, PlusCircle, UserPlus, ArrowRightLeft, ShieldCheck, Clock, Lock, LogOut } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: 'dashboard' | 'loans' | 'books' | 'members' | 'settings';
@@ -8,6 +8,9 @@ interface HeaderProps {
   onOpenIssueModal: () => void;
   onOpenAddBookModal: () => void;
   onOpenAddMemberModal: () => void;
+  isAdmin: boolean;
+  onOpenAdminModal: () => void;
+  onLogoutAdmin: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -17,6 +20,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenIssueModal,
   onOpenAddBookModal,
   onOpenAddMemberModal,
+  isAdmin,
+  onOpenAdminModal,
+  onLogoutAdmin,
 }) => {
   const [time, setTime] = useState<string>('');
 
@@ -83,32 +89,57 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             </div>
 
-            {/* Quick Action Shortcuts */}
+            {/* Quick Action Shortcuts or Admin Login */}
             <div className="flex items-center space-x-1.5">
-              <button
-                onClick={onOpenIssueModal}
-                title="Позајми книга на член"
-                className="bg-[#A8763E] hover:bg-[#966835] text-white px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-sm"
-              >
-                <ArrowRightLeft className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Позајми</span>
-              </button>
-              <button
-                onClick={onOpenAddBookModal}
-                title="Внеси нова книга во фондот"
-                className="bg-[#3A4B3D] hover:bg-[#344337] text-white px-2.5 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1 transition border border-white/10"
-              >
-                <PlusCircle className="w-3.5 h-3.5 text-[#A8763E]" />
-                <span className="hidden md:inline">+ Книга</span>
-              </button>
-              <button
-                onClick={onOpenAddMemberModal}
-                title="Регистрирај нов ученик/член"
-                className="bg-[#3A4B3D] hover:bg-[#344337] text-white px-2.5 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1 transition border border-white/10"
-              >
-                <UserPlus className="w-3.5 h-3.5 text-[#A8763E]" />
-                <span className="hidden md:inline">+ Член</span>
-              </button>
+              {isAdmin ? (
+                <>
+                  <div className="hidden lg:flex items-center gap-1.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-xl text-xs font-bold">
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Админ</span>
+                  </div>
+                  <button
+                    onClick={onOpenIssueModal}
+                    title="Позајми книга на член"
+                    className="bg-[#A8763E] hover:bg-[#966835] text-white px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-sm"
+                  >
+                    <ArrowRightLeft className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Позајми</span>
+                  </button>
+                  <button
+                    onClick={onOpenAddBookModal}
+                    title="Внеси нова книга во фондот"
+                    className="bg-[#3A4B3D] hover:bg-[#344337] text-white px-2.5 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1 transition border border-white/10"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5 text-[#A8763E]" />
+                    <span className="hidden md:inline">+ Книга</span>
+                  </button>
+                  <button
+                    onClick={onOpenAddMemberModal}
+                    title="Регистрирај нов ученик/член"
+                    className="bg-[#3A4B3D] hover:bg-[#344337] text-white px-2.5 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1 transition border border-white/10"
+                  >
+                    <UserPlus className="w-3.5 h-3.5 text-[#A8763E]" />
+                    <span className="hidden md:inline">+ Член</span>
+                  </button>
+                  <button
+                    onClick={onLogoutAdmin}
+                    title="Одјави се од админ профил"
+                    className="bg-rose-900/40 hover:bg-rose-900/70 text-rose-200 border border-rose-500/30 px-2.5 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1 transition"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Излез</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={onOpenAdminModal}
+                  title="Најави се како администратор за да вршиш промени"
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition shadow-sm"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Админ Влез</span>
+                </button>
+              )}
             </div>
           </div>
 

@@ -10,6 +10,7 @@ interface CirculationViewProps {
   onIssueNewBook: () => void;
   onReturnBook: (loanId: string) => void;
   onExtendLoan: (loanId: string) => void;
+  isAdmin?: boolean;
 }
 
 export const CirculationView: React.FC<CirculationViewProps> = ({
@@ -17,6 +18,7 @@ export const CirculationView: React.FC<CirculationViewProps> = ({
   onIssueNewBook,
   onReturnBook,
   onExtendLoan,
+  isAdmin = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'сите' | LoanStatus>('сите');
@@ -63,13 +65,15 @@ export const CirculationView: React.FC<CirculationViewProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={onIssueNewBook}
-          className="bg-[#A8763E] hover:bg-[#966835] text-white font-bold px-4 py-2.5 rounded-2xl text-sm transition flex items-center gap-2 shadow-sm self-start md:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Издај нова книга</span>
-        </button>
+        {isAdmin && (
+          <button
+            onClick={onIssueNewBook}
+            className="bg-[#A8763E] hover:bg-[#966835] text-white font-bold px-4 py-2.5 rounded-2xl text-sm transition flex items-center gap-2 shadow-sm self-start md:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Издај нова книга</span>
+          </button>
+        )}
       </div>
 
       {/* Filter Tabs & Search Bar */}
@@ -228,7 +232,7 @@ export const CirculationView: React.FC<CirculationViewProps> = ({
 
                       {/* Actions */}
                       <td className="py-3.5 px-4 text-right space-x-1.5">
-                        {loan.status !== 'вратена' ? (
+                        {isAdmin && loan.status !== 'вратена' && (
                           <>
                             <button
                               onClick={() => onReturnBook(loan.id)}
@@ -248,7 +252,8 @@ export const CirculationView: React.FC<CirculationViewProps> = ({
                               <span className="hidden sm:inline">+14 д.</span>
                             </button>
                           </>
-                        ) : (
+                        )}
+                        {loan.status === 'вратена' && (
                           <span className="text-xs text-slate-400 italic">Завршено</span>
                         )}
 

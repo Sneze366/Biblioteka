@@ -18,6 +18,7 @@ import { AddMemberModal } from './components/AddMemberModal';
 import { MemberHistoryModal } from './components/MemberHistoryModal';
 import { ExcelImportModal } from './components/ExcelImportModal';
 import { ExcelBookImportModal } from './components/ExcelBookImportModal';
+import { AdminPinModal } from './components/AdminPinModal';
 
 import { 
   getBooks, getMembers, getLoans, getLogs, getLibraryStats, 
@@ -46,6 +47,22 @@ export default function App() {
     overdueLoans: 0,
     returnedCount: 0
   });
+
+  // Admin PIN Authentication State
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    return sessionStorage.getItem('ilinden_library_is_admin') === 'true';
+  });
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+
+  const handleAdminSuccess = () => {
+    setIsAdmin(true);
+    sessionStorage.setItem('ilinden_library_is_admin', 'true');
+  };
+
+  const handleAdminLogout = () => {
+    setIsAdmin(false);
+    sessionStorage.removeItem('ilinden_library_is_admin');
+  };
 
   // Modal Dialog States
   const [isQuickStockOpen, setIsQuickStockOpen] = useState(false);
@@ -188,6 +205,9 @@ export default function App() {
         }}
         onOpenAddBookModal={() => setIsAddBookModalOpen(true)}
         onOpenAddMemberModal={() => setIsAddMemberModalOpen(true)}
+        isAdmin={isAdmin}
+        onOpenAdminModal={() => setIsAdminModalOpen(true)}
+        onLogoutAdmin={handleAdminLogout}
       />
 
       {/* Main Body */}
@@ -206,6 +226,7 @@ export default function App() {
             }}
             onOpenQuickStock={() => setIsQuickStockOpen(true)}
             onSelectBookForIssue={handleOpenIssueForBook}
+            isAdmin={isAdmin}
           />
         )}
 
@@ -219,6 +240,7 @@ export default function App() {
             }}
             onReturnBook={handleReturnBook}
             onExtendLoan={handleExtendLoan}
+            isAdmin={isAdmin}
           />
         )}
 
@@ -229,6 +251,7 @@ export default function App() {
             onOpenAddBookModal={() => setIsAddBookModalOpen(true)}
             onOpenBookImportModal={() => setIsExcelBookImportModalOpen(true)}
             onSelectBookForIssue={handleOpenIssueForBook}
+            isAdmin={isAdmin}
           />
         )}
 
@@ -239,6 +262,7 @@ export default function App() {
             onOpenAddMemberModal={() => setIsAddMemberModalOpen(true)}
             onOpenExcelImportModal={() => setIsExcelImportModalOpen(true)}
             onSelectMemberHistory={m => setSelectedMemberForHistory(m)}
+            isAdmin={isAdmin}
           />
         )}
 
@@ -252,16 +276,25 @@ export default function App() {
             onClearDatabase={clearDatabaseToEmpty}
             onOpenExcelImportModal={() => setIsExcelImportModalOpen(true)}
             onOpenExcelBookImportModal={() => setIsExcelBookImportModalOpen(true)}
+            isAdmin={isAdmin}
+            onOpenAdminModal={() => setIsAdminModalOpen(true)}
           />
         )}
       </main>
 
       {/* Modals & Dialogs */}
+      <AdminPinModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
+        onSuccess={handleAdminSuccess}
+      />
+
       <QuickStockModal
         isOpen={isQuickStockOpen}
         onClose={() => setIsQuickStockOpen(false)}
         books={books}
         onIssueBook={handleOpenIssueForBook}
+        isAdmin={isAdmin}
       />
 
       <IssueBookModal
@@ -310,6 +343,7 @@ export default function App() {
         onClose={() => setSelectedMemberForHistory(null)}
         onReturnBook={handleReturnBook}
         onIssueToMember={handleOpenIssueForMember}
+        isAdmin={isAdmin}
       />
 
       {/* Footer */}

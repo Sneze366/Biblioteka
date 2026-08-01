@@ -14,6 +14,7 @@ interface DashboardViewProps {
   onOpenIssueModal: () => void;
   onOpenQuickStock: () => void;
   onSelectBookForIssue: (book: Book) => void;
+  isAdmin?: boolean;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -25,6 +26,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenIssueModal,
   onOpenQuickStock,
   onSelectBookForIssue,
+  isAdmin = false,
 }) => {
   const [quickQuery, setQuickQuery] = useState('');
 
@@ -73,13 +75,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
-            <button
-              onClick={onOpenIssueModal}
-              className="bg-[#A8763E] hover:bg-[#966835] text-white font-bold px-4 py-2 rounded-xl text-sm transition flex items-center gap-2 shadow-sm"
-            >
-              <ArrowUpRight className="w-4 h-4" />
-              <span>Позајми книга</span>
-            </button>
+            {isAdmin && (
+              <button
+                onClick={onOpenIssueModal}
+                className="bg-[#A8763E] hover:bg-[#966835] text-white font-bold px-4 py-2 rounded-xl text-sm transition flex items-center gap-2 shadow-sm"
+              >
+                <ArrowUpRight className="w-4 h-4" />
+                <span>Позајми книга</span>
+              </button>
+            )}
 
             <button
               onClick={onOpenQuickStock}
@@ -144,7 +148,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         Нема на залиха (0/{b.totalCopies})
                       </span>
                     )}
-                    {b.availableCopies > 0 && (
+                    {isAdmin && b.availableCopies > 0 && (
                       <button
                         onClick={() => onSelectBookForIssue(b)}
                         className="text-xs font-bold bg-[#A8763E] hover:bg-[#966835] text-white px-3 py-1 rounded-xl transition"

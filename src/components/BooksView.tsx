@@ -11,6 +11,7 @@ interface BooksViewProps {
   onOpenAddBookModal: () => void;
   onOpenBookImportModal?: () => void;
   onSelectBookForIssue: (book: Book) => void;
+  isAdmin?: boolean;
 }
 
 const GENRES_LIST: GenreType[] = [
@@ -33,6 +34,7 @@ export const BooksView: React.FC<BooksViewProps> = ({
   onOpenAddBookModal,
   onOpenBookImportModal,
   onSelectBookForIssue,
+  isAdmin = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState<string>('сите');
@@ -96,25 +98,27 @@ export const BooksView: React.FC<BooksViewProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap self-start md:self-auto">
-          {onOpenBookImportModal && (
-            <button
-              onClick={onOpenBookImportModal}
-              className="bg-[#5D8A66] hover:bg-[#4D7454] text-white font-bold px-4 py-2.5 rounded-2xl text-sm transition flex items-center gap-2 shadow-sm"
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              <span>Импорт од Excel</span>
-            </button>
-          )}
+        {isAdmin && (
+          <div className="flex items-center gap-2 flex-wrap self-start md:self-auto">
+            {onOpenBookImportModal && (
+              <button
+                onClick={onOpenBookImportModal}
+                className="bg-[#5D8A66] hover:bg-[#4D7454] text-white font-bold px-4 py-2.5 rounded-2xl text-sm transition flex items-center gap-2 shadow-sm"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                <span>Импорт од Excel</span>
+              </button>
+            )}
 
-          <button
-            onClick={onOpenAddBookModal}
-            className="bg-[#A8763E] hover:bg-[#966835] text-white font-bold px-4 py-2.5 rounded-2xl text-sm transition flex items-center gap-2 shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Внеси нова книга</span>
-          </button>
-        </div>
+            <button
+              onClick={onOpenAddBookModal}
+              className="bg-[#A8763E] hover:bg-[#966835] text-white font-bold px-4 py-2.5 rounded-2xl text-sm transition flex items-center gap-2 shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Внеси нова книга</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filter & Search Bar */}
@@ -291,17 +295,19 @@ export const BooksView: React.FC<BooksViewProps> = ({
                       <Info className="w-4 h-4" />
                     </button>
 
-                    <button
-                      disabled={!inStock}
-                      onClick={() => onSelectBookForIssue(book)}
-                      className={`text-xs px-2.5 py-1 rounded-lg font-bold transition ${
-                        inStock
-                          ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-sm'
-                          : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                      }`}
-                    >
-                      Позајми
-                    </button>
+                    {isAdmin && (
+                      <button
+                        disabled={!inStock}
+                        onClick={() => onSelectBookForIssue(book)}
+                        className={`text-xs px-2.5 py-1 rounded-lg font-bold transition ${
+                          inStock
+                            ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-sm'
+                            : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        }`}
+                      >
+                        Позајми
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -348,17 +354,19 @@ export const BooksView: React.FC<BooksViewProps> = ({
                       >
                         Детали
                       </button>
-                      <button
-                        disabled={book.availableCopies === 0}
-                        onClick={() => onSelectBookForIssue(book)}
-                        className={`text-xs px-2.5 py-1 rounded-lg font-bold ${
-                          book.availableCopies > 0
-                            ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
-                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                        }`}
-                      >
-                        Позајми
-                      </button>
+                      {isAdmin && (
+                        <button
+                          disabled={book.availableCopies === 0}
+                          onClick={() => onSelectBookForIssue(book)}
+                          className={`text-xs px-2.5 py-1 rounded-lg font-bold ${
+                            book.availableCopies > 0
+                              ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+                              : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                          }`}
+                        >
+                          Позајми
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -459,7 +467,7 @@ export const BooksView: React.FC<BooksViewProps> = ({
               >
                 Затвори
               </button>
-              {selectedBook.availableCopies > 0 && (
+              {isAdmin && selectedBook.availableCopies > 0 && (
                 <button
                   onClick={() => {
                     const b = selectedBook;

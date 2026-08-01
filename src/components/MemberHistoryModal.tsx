@@ -8,6 +8,7 @@ interface MemberHistoryModalProps {
   onClose: () => void;
   onReturnBook: (loanId: string) => void;
   onIssueToMember: (member: Member) => void;
+  isAdmin?: boolean;
 }
 
 export const MemberHistoryModal: React.FC<MemberHistoryModalProps> = ({
@@ -16,6 +17,7 @@ export const MemberHistoryModal: React.FC<MemberHistoryModalProps> = ({
   onClose,
   onReturnBook,
   onIssueToMember,
+  isAdmin = false,
 }) => {
   if (!member) return null;
 
@@ -86,16 +88,18 @@ export const MemberHistoryModal: React.FC<MemberHistoryModalProps> = ({
               <History className="w-4 h-4 text-amber-600" />
               Детална историја на позајмени книги
             </h3>
-            <button
-              onClick={() => {
-                onClose();
-                onIssueToMember(member);
-              }}
-              className="text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow-sm"
-            >
-              <ArrowRightLeft className="w-3.5 h-3.5" />
-              <span>Позајми му нова книга</span>
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onIssueToMember(member);
+                }}
+                className="text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow-sm"
+              >
+                <ArrowRightLeft className="w-3.5 h-3.5" />
+                <span>Позајми му нова книга</span>
+              </button>
+            )}
           </div>
 
           {memberLoans.length === 0 ? (
@@ -153,7 +157,7 @@ export const MemberHistoryModal: React.FC<MemberHistoryModalProps> = ({
                       </span>
                     )}
 
-                    {loan.status !== 'вратена' && (
+                    {isAdmin && loan.status !== 'вратена' && (
                       <button
                         onClick={() => onReturnBook(loan.id)}
                         className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-2.5 py-1 rounded-lg transition"
