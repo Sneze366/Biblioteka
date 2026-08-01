@@ -14,14 +14,15 @@ function notifyChange() {
   window.dispatchEvent(new Event(LIBRARY_STORAGE_EVENT));
 }
 
-// Initialize LocalStorage with seed data ONLY if app was never initialized before
+// Initialize LocalStorage with empty database by default so user can enter real books
 export function initializeStorageIfNeeded(): { books: Book[]; members: Member[]; loans: Loan[]; logs: ActivityLog[] } {
   const isInitialized = localStorage.getItem(INITIALIZED_KEY);
 
   if (!isInitialized) {
-    const books = generateInitialBooks();
-    const members = generateInitialMembers();
-    const { loans, logs } = generateInitialLoansAndActivity(books, members);
+    const books: Book[] = [];
+    const members: Member[] = [];
+    const loans: Loan[] = [];
+    const logs: ActivityLog[] = [];
 
     localStorage.setItem(BOOKS_KEY, JSON.stringify(books));
     localStorage.setItem(MEMBERS_KEY, JSON.stringify(members));
